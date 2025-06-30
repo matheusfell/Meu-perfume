@@ -16,10 +16,6 @@ function App() {
         <Route path="/" element={<Navigate to="/login" />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-
-        php-template
-        Copiar
-        Editar
         {/* Rotas protegidas */}
         <Route
           path="/home"
