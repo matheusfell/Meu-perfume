@@ -13,11 +13,16 @@ import {
 
 function Wishlist() {
   const [wishlist, setWishlist] = useState([]);
+  const [temaEscuro, setTemaEscuro] = useState(false);
   const navigate = useNavigate();
 
   const usuario = JSON.parse(localStorage.getItem("usuarioLogado") || "{}");
 
   useEffect(() => {
+    const temaSalvo = localStorage.getItem("tema") === "dark";
+    setTemaEscuro(temaSalvo);
+    document.documentElement.classList.toggle("dark", temaSalvo);
+
     const carregarWishlist = async () => {
       if (!usuario?.uid) return;
 
@@ -32,6 +37,13 @@ function Wishlist() {
 
     carregarWishlist();
   }, [usuario]);
+
+  const alternarTema = () => {
+    const novoTema = !temaEscuro;
+    setTemaEscuro(novoTema);
+    document.documentElement.classList.toggle("dark", novoTema);
+    localStorage.setItem("tema", novoTema ? "dark" : "light");
+  };
 
   const handleEditar = (perfume) => {
     navigate("/wishlist/add", { state: { perfume, editMode: true } });
@@ -52,23 +64,31 @@ function Wishlist() {
   };
 
   return (
-    <div className="min-h-screen p-6 bg-gradient-to-br from-rose-50 to-violet-50">
+    <div className="min-h-screen p-6 bg-gradient-to-br from-rose-50 to-violet-50 dark:from-gray-900 dark:to-gray-800 text-gray-800 dark:text-gray-100">
       <div className="max-w-4xl mx-auto">
-        <button
-          onClick={() => navigate("/home")}
-          className="flex items-center text-pink-600 hover:text-pink-800 mb-4 transition font-medium"
-        >
-          <ArrowLeft className="w-5 h-5 mr-2" />
-          Voltar
-        </button>
+        <div className="flex justify-between items-center mb-4">
+          <button
+            onClick={() => navigate("/home")}
+            className="flex items-center text-pink-600 hover:text-pink-800 transition font-medium"
+          >
+            <ArrowLeft className="w-5 h-5 mr-2" />
+            Voltar
+          </button>
+          <button
+            onClick={alternarTema}
+            className="text-sm bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded-full"
+          >
+            {temaEscuro ? "🌞 Claro" : "🌙 Escuro"}
+          </button>
+        </div>
 
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
               <span className="text-pink-400 text-3xl">★</span>
               Minha Wishlist
             </h1>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-gray-300">
               {wishlist.length} perfume{wishlist.length !== 1 && "s"} na sua lista de desejos
             </p>
           </div>
@@ -86,11 +106,11 @@ function Wishlist() {
           {wishlist.map((perfume) => (
             <div
               key={perfume.id}
-              className="flex items-center justify-between bg-white rounded-xl shadow p-4 hover:shadow-md transition cursor-pointer"
+              className="flex items-center justify-between bg-white dark:bg-gray-900 rounded-xl shadow p-4 hover:shadow-md transition cursor-pointer"
               onClick={() => handleEditar(perfume)}
             >
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-lg bg-gray-100 overflow-hidden">
+                <div className="w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-800 overflow-hidden">
                   {perfume.imagem ? (
                     <img
                       src={perfume.imagem}
@@ -105,8 +125,8 @@ function Wishlist() {
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold">{perfume.nome}</h3>
-                  <p className="text-sm text-gray-500">{perfume.marca}</p>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{perfume.nome}</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-300">{perfume.marca}</p>
                   {perfume.preco && (
                     <p className="text-sm font-medium text-violet-400 mt-1">
                       R$ {parseFloat(perfume.preco).toFixed(2).replace(".", ",")}
@@ -118,13 +138,13 @@ function Wishlist() {
               <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                 <button
                   onClick={() => handleAdicionar(perfume)}
-                  className="bg-green-100 text-green-600 px-3 py-2 rounded-lg text-sm font-medium hover:bg-green-200 transition"
+                  className="bg-green-100 dark:bg-green-300 text-green-600 px-3 py-2 rounded-lg text-sm font-medium hover:bg-green-200 transition"
                 >
                   Adicionar à Coleção
                 </button>
                 <button
                   onClick={() => handleExcluir(perfume.id)}
-                  className="bg-red-100 text-red-600 px-3 py-2 rounded-lg hover:bg-red-200"
+                  className="bg-red-100 dark:bg-red-300 text-red-600 px-3 py-2 rounded-lg hover:bg-red-200"
                   title="Excluir"
                 >
                   <Trash className="w-4 h-4" />

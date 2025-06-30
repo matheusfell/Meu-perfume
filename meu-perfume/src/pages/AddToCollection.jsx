@@ -14,6 +14,7 @@ function AddToCollection() {
   const [notas, setNotas] = useState("");
   const [ocasiões, setOcasiões] = useState([]);
   const [acordes, setAcordes] = useState([]);
+  const [temaEscuro, setTemaEscuro] = useState(false);
 
   const opcoesOcasiões = [
     "Trabalho",
@@ -45,7 +46,18 @@ function AddToCollection() {
       setMarca(perfume.marca || "");
       setImagem(perfume.imagem || "");
     }
+
+    const temaSalvo = localStorage.getItem("tema") === "dark";
+    setTemaEscuro(temaSalvo);
+    document.documentElement.classList.toggle("dark", temaSalvo);
   }, [location]);
+
+  const alternarTema = () => {
+    const novoTema = !temaEscuro;
+    setTemaEscuro(novoTema);
+    document.documentElement.classList.toggle("dark", novoTema);
+    localStorage.setItem("tema", novoTema ? "dark" : "light");
+  };
 
   const toggleItem = (value, list, setList) => {
     if (list.includes(value)) {
@@ -77,16 +89,6 @@ function AddToCollection() {
 
     try {
       await addDoc(collection(db, "colecao"), novoPerfume);
-
-      const perfumeVindo = location.state?.perfume;
-      if (perfumeVindo) {
-        const wishlist = JSON.parse(localStorage.getItem("wishlist") || "[]");
-        const novaWishlist = wishlist.filter(
-          (p) => !(p.nome === perfumeVindo.nome && p.marca === perfumeVindo.marca)
-        );
-        localStorage.setItem("wishlist", JSON.stringify(novaWishlist));
-      }
-
       navigate("/collection");
     } catch (error) {
       console.error("Erro ao adicionar ao Firestore:", error);
@@ -94,19 +96,27 @@ function AddToCollection() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-white px-4 py-6">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-white dark:from-gray-900 dark:to-gray-800 px-4 py-6 text-gray-800 dark:text-gray-100">
       <div className="max-w-xl mx-auto">
-        <button
-          onClick={() => navigate("/collection")}
-          className="flex items-center text-sm text-gray-500 hover:text-black mb-4"
-        >
-          ← Voltar
-        </button>
+        <div className="flex justify-between items-center mb-4">
+          <button
+            onClick={() => navigate("/collection")}
+            className="flex items-center text-sm text-gray-500 hover:text-black dark:text-gray-300 dark:hover:text-white"
+          >
+            ← Voltar
+          </button>
+          <button
+            onClick={alternarTema}
+            className="text-sm bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded-full"
+          >
+            {temaEscuro ? "🌞 Claro" : "🌙 Escuro"}
+          </button>
+        </div>
 
         <h1 className="text-center text-2xl font-bold mb-6">Detalhes do Perfume</h1>
 
         <div className="flex justify-center mb-4">
-          <label className="h-24 w-24 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center cursor-pointer text-gray-400 hover:text-gray-600">
+          <label className="h-24 w-24 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl flex items-center justify-center cursor-pointer text-gray-400 hover:text-gray-600">
             {imagem ? (
               <img src={imagem} alt="Preview" className="h-full w-full object-cover rounded-xl" />
             ) : (
@@ -139,14 +149,14 @@ function AddToCollection() {
             value={nome}
             onChange={(e) => setNome(e.target.value)}
             placeholder="Ex: Aventus"
-            className="border rounded-lg p-3 w-full"
+            className="border rounded-lg p-3 w-full bg-white dark:bg-gray-800 dark:text-white"
           />
           <input
             type="text"
             value={marca}
             onChange={(e) => setMarca(e.target.value)}
             placeholder="Ex: Creed"
-            className="border rounded-lg p-3 w-full"
+            className="border rounded-lg p-3 w-full bg-white dark:bg-gray-800 dark:text-white"
           />
         </div>
 
@@ -167,7 +177,7 @@ function AddToCollection() {
           value={notas}
           onChange={(e) => setNotas(e.target.value)}
           placeholder="Escreva suas impressões sobre este perfume..."
-          className="border rounded-lg p-3 w-full mb-4"
+          className="border rounded-lg p-3 w-full mb-4 bg-white dark:bg-gray-800 dark:text-white"
         />
 
         <div className="mb-4">
@@ -179,8 +189,8 @@ function AddToCollection() {
                 onClick={() => toggleItem(item, ocasiões, setOcasiões)}
                 className={`px-3 py-1 rounded-full text-sm cursor-pointer transition border
                   ${ocasiões.includes(item)
-                    ? "bg-rose-100 text-rose-700 border-rose-200"
-                    : "bg-white text-gray-500 border-gray-200 hover:bg-gray-100"}`}
+                    ? "bg-rose-100 dark:bg-rose-300 text-rose-700 dark:text-rose-900 border-rose-200"
+                    : "bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-300 border-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"}`}
               >
                 {item}
               </span>
@@ -197,8 +207,8 @@ function AddToCollection() {
                 onClick={() => toggleItem(item, acordes, setAcordes)}
                 className={`px-3 py-1 rounded-full text-sm cursor-pointer transition border
                   ${acordes.includes(item)
-                    ? "bg-green-100 text-green-700 border-green-200"
-                    : "bg-white text-gray-500 border-gray-200 hover:bg-gray-100"}`}
+                    ? "bg-green-100 dark:bg-green-300 text-green-700 dark:text-green-900 border-green-200"
+                    : "bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-300 border-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"}`}
               >
                 {item}
               </span>
@@ -208,7 +218,7 @@ function AddToCollection() {
 
         <button
           onClick={handleAdd}
-          className="bg-violet-200 hover:bg-violet-300 text-black w-full py-3 rounded-xl font-semibold transition"
+          className="bg-violet-200 dark:bg-violet-500 hover:bg-violet-300 dark:hover:bg-violet-600 text-black dark:text-white w-full py-3 rounded-xl font-semibold transition"
         >
           Adicionar à Coleção
         </button>

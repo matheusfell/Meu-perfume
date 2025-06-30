@@ -6,6 +6,7 @@ import { collection, query, where, onSnapshot, deleteDoc, doc } from "firebase/f
 
 function Collection() {
   const [colecao, setColecao] = useState([]);
+  const [temaEscuro, setTemaEscuro] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,8 +21,19 @@ function Collection() {
       setColecao(perfumes);
     });
 
+    const temaSalvo = localStorage.getItem("tema") === "dark";
+    setTemaEscuro(temaSalvo);
+    document.documentElement.classList.toggle("dark", temaSalvo);
+
     return () => unsubscribe();
   }, []);
+
+  const alternarTema = () => {
+    const novoTema = !temaEscuro;
+    setTemaEscuro(novoTema);
+    document.documentElement.classList.toggle("dark", novoTema);
+    localStorage.setItem("tema", novoTema ? "dark" : "light");
+  };
 
   const renderEstrelas = (nota) => {
     const estrelas = [];
@@ -47,9 +59,9 @@ function Collection() {
   };
 
   return (
-    <div className="min-h-screen px-6 py-8 bg-gradient-to-br from-green-50 to-white">
+    <div className="min-h-screen px-6 py-8 bg-gradient-to-br from-green-50 to-white dark:from-gray-900 dark:to-gray-800 text-gray-800 dark:text-gray-100">
       <div className="max-w-4xl mx-auto px-4">
-        <div className="mb-4">
+        <div className="flex justify-between items-center mb-4">
           <button
             onClick={() => navigate("/home")}
             className="flex items-center text-pink-600 hover:text-pink-800 transition font-medium"
@@ -57,15 +69,21 @@ function Collection() {
             <ArrowLeft className="w-5 h-5 mr-2" />
             Voltar
           </button>
+          <button
+            onClick={alternarTema}
+            className="text-sm bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded-full"
+          >
+            {temaEscuro ? "🌞 Claro" : "🌙 Escuro"}
+          </button>
         </div>
 
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
               <span className="text-green-400 text-3xl">🎒</span>
               Minha Coleção
             </h1>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               {colecao.length} perfume{colecao.length !== 1 && "s"} na sua coleção
             </p>
           </div>
@@ -82,7 +100,7 @@ function Collection() {
           {colecao.map((perfume) => (
             <div
               key={perfume.id}
-              className="bg-white rounded-xl shadow p-6 hover:shadow-md cursor-pointer transition relative"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 hover:shadow-md cursor-pointer transition relative"
               onClick={() => handleEditar(perfume)}
             >
               <button
@@ -101,16 +119,16 @@ function Collection() {
                     className="h-20 w-20 object-cover rounded-xl"
                   />
                 ) : (
-                  <div className="h-20 w-20 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400">
+                  <div className="h-20 w-20 rounded-xl bg-gray-100 dark:bg-gray-600 flex items-center justify-center text-gray-400">
                     sem foto
                   </div>
                 )}
               </div>
 
-              <h3 className="text-center text-lg font-semibold text-gray-800">
+              <h3 className="text-center text-lg font-semibold text-gray-800 dark:text-white">
                 {perfume.nome}
               </h3>
-              <p className="text-center text-sm text-gray-500 mb-2">{perfume.marca}</p>
+              <p className="text-center text-sm text-gray-500 dark:text-gray-300 mb-2">{perfume.marca}</p>
 
               <div className="flex justify-center mb-4">
                 {renderEstrelas(perfume.nota || 0)}
@@ -118,19 +136,19 @@ function Collection() {
 
               {perfume.notas && (
                 <div className="mb-3">
-                  <p className="font-medium text-sm text-gray-700">Minhas Notas:</p>
-                  <p className="text-sm text-gray-600 mt-1">{perfume.notas}</p>
+                  <p className="font-medium text-sm text-gray-700 dark:text-gray-300">Minhas Notas:</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-200 mt-1">{perfume.notas}</p>
                 </div>
               )}
 
               {perfume.ocasiões?.length > 0 && (
                 <div className="mb-3">
-                  <p className="font-medium text-sm text-gray-700">Ocasiões:</p>
+                  <p className="font-medium text-sm text-gray-700 dark:text-gray-300">Ocasiões:</p>
                   <div className="flex flex-wrap gap-2 mt-1">
                     {perfume.ocasiões.map((item, idx) => (
                       <span
                         key={idx}
-                        className="bg-rose-100 text-rose-700 px-2 py-1 text-xs rounded-full"
+                        className="bg-rose-100 dark:bg-rose-300 text-rose-700 dark:text-rose-900 px-2 py-1 text-xs rounded-full"
                       >
                         {item}
                       </span>
@@ -141,12 +159,12 @@ function Collection() {
 
               {perfume.acordes?.length > 0 && (
                 <div className="mb-3">
-                  <p className="font-medium text-sm text-gray-700">Acordes:</p>
+                  <p className="font-medium text-sm text-gray-700 dark:text-gray-300">Acordes:</p>
                   <div className="flex flex-wrap gap-2 mt-1">
                     {perfume.acordes.map((item, idx) => (
                       <span
                         key={idx}
-                        className="bg-green-100 text-green-700 px-2 py-1 text-xs rounded-full"
+                        className="bg-green-100 dark:bg-green-300 text-green-700 dark:text-green-900 px-2 py-1 text-xs rounded-full"
                       >
                         {item}
                       </span>

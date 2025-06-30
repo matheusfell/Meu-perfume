@@ -24,8 +24,13 @@ function AddPerfume() {
   const [preco, setPreco] = useState("");
   const [editMode, setEditMode] = useState(false);
   const [perfumeId, setPerfumeId] = useState(null);
+  const [temaEscuro, setTemaEscuro] = useState(false);
 
   useEffect(() => {
+    const temaSalvo = localStorage.getItem("tema") === "dark";
+    setTemaEscuro(temaSalvo);
+    document.documentElement.classList.toggle("dark", temaSalvo);
+
     const perfume = location.state?.perfume;
     if (perfume) {
       setNome(perfume.nome || "");
@@ -36,6 +41,13 @@ function AddPerfume() {
       setPerfumeId(perfume.id || null);
     }
   }, [location]);
+
+  const alternarTema = () => {
+    const novoTema = !temaEscuro;
+    setTemaEscuro(novoTema);
+    document.documentElement.classList.toggle("dark", novoTema);
+    localStorage.setItem("tema", novoTema ? "dark" : "light");
+  };
 
   const handleSalvar = async () => {
     if (!nome || !marca || !usuario?.uid) return;
@@ -68,21 +80,29 @@ function AddPerfume() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-violet-50 px-4 py-6">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-violet-50 dark:from-gray-900 dark:to-gray-800 text-gray-800 dark:text-gray-100 px-4 py-6">
       <div className="max-w-xl mx-auto">
-        <button
-          onClick={() => navigate("/wishlist")}
-          className="flex items-center text-sm text-gray-500 hover:text-black mb-4"
-        >
-          ← Voltar
-        </button>
+        <div className="flex justify-between items-center mb-4">
+          <button
+            onClick={() => navigate("/wishlist")}
+            className="text-sm text-gray-500 hover:text-black dark:text-gray-300 dark:hover:text-white"
+          >
+            ← Voltar
+          </button>
+          <button
+            onClick={alternarTema}
+            className="text-sm bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded-full"
+          >
+            {temaEscuro ? "🌞 Claro" : "🌙 Escuro"}
+          </button>
+        </div>
 
         <h1 className="text-center text-2xl font-bold mb-6">
           {editMode ? "Editar Perfume" : "Adicionar à Wishlist"}
         </h1>
 
         <div className="flex justify-center mb-4">
-          <label className="h-24 w-24 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center cursor-pointer text-gray-400 hover:text-gray-600">
+          <label className="h-24 w-24 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl flex items-center justify-center cursor-pointer text-gray-400 hover:text-gray-600">
             {imagem ? (
               <img
                 src={imagem}
@@ -119,14 +139,14 @@ function AddPerfume() {
             value={nome}
             onChange={(e) => setNome(e.target.value)}
             placeholder="Ex: Sauvage"
-            className="border rounded-lg p-3 w-full"
+            className="border rounded-lg p-3 w-full dark:bg-gray-800 dark:text-white"
           />
           <input
             type="text"
             value={marca}
             onChange={(e) => setMarca(e.target.value)}
             placeholder="Ex: Dior"
-            className="border rounded-lg p-3 w-full"
+            className="border rounded-lg p-3 w-full dark:bg-gray-800 dark:text-white"
           />
         </div>
 
@@ -136,7 +156,7 @@ function AddPerfume() {
           value={preco}
           onChange={(e) => setPreco(e.target.value)}
           placeholder="Preço (opcional)"
-          className="border rounded-lg p-3 w-full mb-6"
+          className="border rounded-lg p-3 w-full mb-6 dark:bg-gray-800 dark:text-white"
         />
 
         <button
@@ -154,7 +174,7 @@ function AddPerfume() {
                 navigate("/wishlist");
               }
             }}
-            className="bg-red-100 hover:bg-red-200 text-red-700 w-full py-3 rounded-xl font-semibold transition"
+            className="bg-red-100 hover:bg-red-200 text-red-700 w-full py-3 rounded-xl font-semibold transition dark:bg-red-300 dark:text-red-800"
           >
             Remover da Wishlist
           </button>
