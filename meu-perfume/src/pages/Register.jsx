@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { auth } from "../firebase";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 
 function Register() {
   const navigate = useNavigate();
@@ -7,27 +9,34 @@ function Register() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const usuariosExistentes = JSON.parse(localStorage.getItem("usuarios") || "[]");
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
+      const user = userCredential.user;
 
-    const emailJaCadastrado = usuariosExistentes.some((u) => u.email === email);
-    if (emailJaCadastrado) {
-      alert("Esse e-mail já foi cadastrado.");
-      return;
+      // Atualiza o perfil do usuário com nome
+      await updateProfile(user, { displayName: nome });
+
+      // Salva o usuário no localStorage
+      localStorage.setItem("usuarioLogado", JSON.stringify({
+        uid: user.uid,
+        email: user.email,
+        nome: nome,
+        foto: user.photoURL || ""
+      }));
+
+      alert("Cadastro realizado com sucesso!");
+      navigate("/home");
+    } catch (error) {
+      console.error("Erro ao cadastrar:", error.message);
+      alert("Erro ao cadastrar. Tente novamente.");
     }
-
-    const novoUsuario = { nome, email, senha };
-    const usuariosAtualizados = [...usuariosExistentes, novoUsuario];
-    localStorage.setItem("usuarios", JSON.stringify(usuariosAtualizados));
-
-    alert("Cadastro realizado com sucesso!");
-    navigate("/login");
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-100 to-rose-100 px-4 relative">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-100 to-rose-100 px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
         <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Criar Conta</h2>
 
@@ -77,7 +86,8 @@ function Register() {
         </form>
 
         <p className="text-sm text-center text-gray-600 mt-4">
-          Já tem uma conta? <a href="/login" className="text-rose-500 hover:underline">Entrar</a>
+          Já tem uma conta?{" "}
+          <a href="/login" className="text-rose-500 hover:underline">Entrar</a>
         </p>
       </div>
     </div>

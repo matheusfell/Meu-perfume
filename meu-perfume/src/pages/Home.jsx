@@ -1,27 +1,43 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { db } from "../firebase";
+import {
+  collection,
+  query,
+  where,
+  getDocs
+} from "firebase/firestore";
 
 function Home() {
   const navigate = useNavigate();
   const [usuario, setUsuario] = useState(null);
-  const [wishlist, setWishlist] = useState([]);
-  const [colecao, setColecao] = useState([]);
+  const [wishlistCount, setWishlistCount] = useState(0);
+  const [colecaoCount, setColecaoCount] = useState(0);
   const [notaMedia, setNotaMedia] = useState(0);
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("usuarioLogado"));
     setUsuario(user);
 
-    const wl = JSON.parse(localStorage.getItem("wishlist") || "[]");
-    const col = JSON.parse(localStorage.getItem("colecao") || "[]");
+    const carregarDados = async () => {
+      if (!user?.uid) return;
 
-    setWishlist(wl);
-    setColecao(col);
+      const qWish = query(collection(db, "wishlist"), where("uid", "==", user.uid));
+      const qColl = query(collection(db, "colecao"), where("userId", "==", user.uid));
 
-    if (col.length > 0) {
-      const soma = col.reduce((acc, cur) => acc + (cur.nota || 0), 0);
-      setNotaMedia((soma / col.length).toFixed(1));
-    }
+      const wishSnap = await getDocs(qWish);
+      const collSnap = await getDocs(qColl);
+
+      setWishlistCount(wishSnap.size);
+      setColecaoCount(collSnap.size);
+
+      const perfumes = collSnap.docs.map(doc => doc.data());
+      const notas = perfumes.map(p => parseFloat(p.nota)).filter(n => !isNaN(n));
+      const media = notas.length ? (notas.reduce((a, b) => a + b, 0) / notas.length).toFixed(1) : 0;
+      setNotaMedia(media);
+    };
+
+    carregarDados();
   }, []);
 
   const handleLogout = () => {
@@ -51,7 +67,7 @@ function Home() {
             className="bg-white rounded-2xl p-6 shadow hover:shadow-lg transition cursor-pointer text-center"
           >
             <div className="bg-rose-100 w-16 h-16 rounded-full mx-auto flex items-center justify-center text-2xl text-rose-500 mb-4">
-              ★
+              ⭐
             </div>
             <h2 className="font-semibold text-xl mb-1">Minha Wishlist</h2>
             <p className="text-gray-500 text-sm mb-4">
@@ -83,11 +99,11 @@ function Home() {
         {/* Indicadores */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-10 text-center">
           <div className="bg-white rounded-xl p-4 shadow">
-            <p className="text-xl font-bold text-gray-900">{wishlist.length}</p>
+            <p className="text-xl font-bold text-gray-900">{wishlistCount}</p>
             <p className="text-sm text-gray-500">Na Wishlist</p>
           </div>
           <div className="bg-white rounded-xl p-4 shadow">
-            <p className="text-xl font-bold text-gray-900">{colecao.length}</p>
+            <p className="text-xl font-bold text-gray-900">{colecaoCount}</p>
             <p className="text-sm text-gray-500">Na Coleção</p>
           </div>
           <div className="bg-white rounded-xl p-4 shadow">

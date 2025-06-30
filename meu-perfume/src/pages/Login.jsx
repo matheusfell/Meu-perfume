@@ -1,35 +1,56 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { auth, googleProvider } from "../firebase";
+import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { FcGoogle } from "react-icons/fc";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
 
-    const usuarios = JSON.parse(localStorage.getItem("usuarios") || "[]");
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, senha);
+      const usuario = userCredential.user;
 
-    const usuario = usuarios.find(
-      (u) => u.email === email && u.senha === senha
-    );
+      localStorage.setItem("usuarioLogado", JSON.stringify({
+        uid: usuario.uid,
+        email: usuario.email,
+        nome: usuario.displayName || "",
+        foto: usuario.photoURL || ""
+      }));
 
-    if (!usuario) {
+      navigate("/home");
+    } catch (error) {
       alert("Email ou senha inválidos.");
-      return;
     }
+  };
 
-    // Salva usuário logado
-    localStorage.setItem("usuarioLogado", JSON.stringify(usuario));
-    navigate("/home");
+  const handleGoogleLogin = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+
+      localStorage.setItem("usuarioLogado", JSON.stringify({
+        uid: user.uid,
+        email: user.email,
+        nome: user.displayName,
+        foto: user.photoURL
+      }));
+
+      navigate("/home");
+    } catch (error) {
+      console.error("Erro ao entrar com Google:", error);
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-100 to-teal-100 px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
         <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Entrar no Bento Parfum</h2>
-
         <form className="space-y-4" onSubmit={handleLogin}>
           <div>
             <label className="block text-sm text-gray-600 mb-1">Email</label>
@@ -63,8 +84,17 @@ function Login() {
           </button>
         </form>
 
+        <button
+          onClick={handleGoogleLogin}
+          className="w-full mt-4 bg-white border border-gray-300 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-100 transition flex items-center justify-center gap-2"
+        >
+          <FcGoogle className="w-5 h-5" />
+          Entrar com Google
+        </button>
+
         <p className="text-sm text-center text-gray-600 mt-4">
-          Ainda não tem uma conta? <a href="/register" className="text-teal-500 hover:underline">Cadastre-se</a>
+          Ainda não tem uma conta?{" "}
+          <a href="/register" className="text-teal-500 hover:underline">Cadastre-se</a>
         </p>
       </div>
     </div>

@@ -1,162 +1,164 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { db } from "../firebase";
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  doc,
+  deleteDoc,
+  getDocs,
+  query,
+  where,
+} from "firebase/firestore";
+import { Camera } from "lucide-react";
 
 function AddPerfume() {
   const navigate = useNavigate();
   const location = useLocation();
+  const usuario = JSON.parse(localStorage.getItem("usuarioLogado") || "{}");
 
   const [nome, setNome] = useState("");
   const [marca, setMarca] = useState("");
-  const [preco, setPreco] = useState("");
   const [imagem, setImagem] = useState("");
+  const [preco, setPreco] = useState("");
   const [editMode, setEditMode] = useState(false);
+  const [perfumeId, setPerfumeId] = useState(null);
 
   useEffect(() => {
     const perfume = location.state?.perfume;
-    const isEditing = location.state?.editMode;
-    if (perfume && isEditing) {
+    if (perfume) {
       setNome(perfume.nome || "");
       setMarca(perfume.marca || "");
-      setPreco(perfume.preco || "");
       setImagem(perfume.imagem || "");
-      setEditMode(true);
+      setPreco(perfume.preco || "");
+      setEditMode(location.state?.editMode || false);
+      setPerfumeId(perfume.id || null);
     }
   }, [location]);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const novoPerfume = { nome, marca, preco, imagem };
-    const listaAtual = JSON.parse(localStorage.getItem("wishlist") || "[]");
+  const handleSalvar = async () => {
+    if (!nome || !marca || !usuario?.uid) return;
 
-    let novaLista;
-    if (editMode) {
-      // Se for edição, substitui o perfume anterior com mesmo nome e marca
-      const antigo = location.state?.perfume;
-      novaLista = listaAtual.map((p) =>
-        p.nome === antigo.nome && p.marca === antigo.marca ? novoPerfume : p
-      );
+    const novoPerfume = {
+      nome,
+      marca,
+      imagem,
+      preco,
+      uid: usuario.uid,
+    };
+
+    if (editMode && perfumeId) {
+      const ref = doc(db, "wishlist", perfumeId);
+      await updateDoc(ref, novoPerfume);
     } else {
-      // Se for novo, adiciona ao final
-      novaLista = [...listaAtual, novoPerfume];
+      await addDoc(collection(db, "wishlist"), novoPerfume);
     }
 
-    localStorage.setItem("wishlist", JSON.stringify(novaLista));
     navigate("/wishlist");
   };
 
+  const handleRemoverDaWishlist = async () => {
+    if (!usuario?.uid || !perfumeId) return;
+    try {
+      await deleteDoc(doc(db, "wishlist", perfumeId));
+    } catch (err) {
+      console.error("Erro ao remover da wishlist:", err);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 to-white p-6">
-      {/* Top bar */}
-      <div className="flex items-center gap-2 mb-6">
-        <button onClick={() => navigate("/wishlist")}>
-          <ArrowLeft className="h-5 w-5 text-gray-600" />
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-violet-50 px-4 py-6">
+      <div className="max-w-xl mx-auto">
+        <button
+          onClick={() => navigate("/wishlist")}
+          className="flex items-center text-sm text-gray-500 hover:text-black mb-4"
+        >
+          ← Voltar
         </button>
-        <div>
-          <h1 className="text-xl font-bold text-gray-800">
-            {editMode ? "Editar Perfume" : "Adicionar à Wishlist"}
-          </h1>
-          <p className="text-sm text-gray-500">
-            {editMode
-              ? "Atualize os dados do perfume na sua wishlist"
-              : "Adicione um novo perfume à sua lista de desejos"}
-          </p>
-        </div>
-      </div>
 
-      {/* Card */}
-      <div className="max-w-md mx-auto bg-white rounded-2xl shadow-xl px-8 py-10">
-        <h2 className="text-xl font-semibold text-center text-gray-800 mb-4">
-          Detalhes do Perfume
-        </h2>
+        <h1 className="text-center text-2xl font-bold mb-6">
+          {editMode ? "Editar Perfume" : "Adicionar à Wishlist"}
+        </h1>
 
-        {/* Imagem */}
-        <div className="flex flex-col items-center mb-6">
-          <label
-            htmlFor="imageInput"
-            className="cursor-pointer w-24 h-24 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400"
-          >
+        <div className="flex justify-center mb-4">
+          <label className="h-24 w-24 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center cursor-pointer text-gray-400 hover:text-gray-600">
             {imagem ? (
               <img
                 src={imagem}
-                alt="preview"
-                className="w-full h-full object-cover rounded-xl"
+                alt="Preview"
+                className="h-full w-full object-cover rounded-xl"
               />
             ) : (
-              <span className="text-2xl">📷</span>
+              <div className="flex flex-col items-center text-center">
+                <Camera className="h-6 w-6 mb-1" />
+                <span className="text-xs">Toque para adicionar foto</span>
+              </div>
             )}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  const reader = new FileReader();
+                  reader.onloadend = () => {
+                    setImagem(reader.result);
+                  };
+                  reader.readAsDataURL(file);
+                }
+              }}
+              className="hidden"
+            />
           </label>
-          <input
-            id="imageInput"
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files[0];
-              if (file) {
-                const reader = new FileReader();
-                reader.onloadend = () => setImagem(reader.result);
-                reader.readAsDataURL(file);
-              }
-            }}
-          />
-          <p className="text-xs text-gray-400 mt-2">
-            Toque para {imagem ? "alterar" : "adicionar"} foto
-          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm text-gray-700">Nome do Perfume *</label>
-            <input
-              type="text"
-              placeholder="Ex: Sauvage"
-              required
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-400"
-            />
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <input
+            type="text"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            placeholder="Ex: Sauvage"
+            className="border rounded-lg p-3 w-full"
+          />
+          <input
+            type="text"
+            value={marca}
+            onChange={(e) => setMarca(e.target.value)}
+            placeholder="Ex: Dior"
+            className="border rounded-lg p-3 w-full"
+          />
+        </div>
 
-          <div>
-            <label className="block text-sm text-gray-700">Marca *</label>
-            <input
-              type="text"
-              placeholder="Ex: Dior"
-              required
-              value={marca}
-              onChange={(e) => setMarca(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-400"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm text-gray-700">Preço *</label>
-            <input
-              type="text"
-              placeholder="Ex: R$ 450,00"
-              required
-              value={preco}
-              onChange={(e) => setPreco(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-400"
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-rose-100 text-rose-500 py-2 rounded-lg font-semibold cursor-pointer disabled:opacity-50"
-            disabled={!nome || !marca || !preco}
-          >
-            {editMode ? "Salvar Alterações" : "Adicionar à Wishlist"}
-          </button>
-        </form>
+        <input
+          type="number"
+          step="0.01"
+          value={preco}
+          onChange={(e) => setPreco(e.target.value)}
+          placeholder="Preço (opcional)"
+          className="border rounded-lg p-3 w-full mb-6"
+        />
 
         <button
-          onClick={() => navigate("/wishlist")}
-          className="mt-4 text-gray-500 text-sm hover:underline w-full text-center"
+          onClick={handleSalvar}
+          className="bg-violet-500 hover:bg-violet-600 text-white w-full py-3 rounded-xl font-semibold transition mb-2"
         >
-          Cancelar
+          {editMode ? "Salvar Alterações" : "Adicionar à Wishlist"}
         </button>
+
+        {editMode && (
+          <button
+            onClick={() => {
+              if (confirm("Tem certeza que deseja remover este perfume da wishlist?")) {
+                handleRemoverDaWishlist();
+                navigate("/wishlist");
+              }
+            }}
+            className="bg-red-100 hover:bg-red-200 text-red-700 w-full py-3 rounded-xl font-semibold transition"
+          >
+            Remover da Wishlist
+          </button>
+        )}
       </div>
     </div>
   );

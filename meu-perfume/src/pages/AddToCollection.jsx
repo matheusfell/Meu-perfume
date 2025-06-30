@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Star, Camera } from "lucide-react";
+import { db } from "../firebase";
+import { collection, addDoc } from "firebase/firestore";
 
 function AddToCollection() {
   const navigate = useNavigate();
@@ -53,8 +55,14 @@ function AddToCollection() {
     }
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!nome || !marca) return;
+
+    const usuario = JSON.parse(localStorage.getItem("usuarioLogado"));
+    if (!usuario?.uid) {
+      alert("Usuário não autenticado");
+      return;
+    }
 
     const novoPerfume = {
       nome,
@@ -64,23 +72,25 @@ function AddToCollection() {
       notas,
       ocasiões,
       acordes,
+      userId: usuario.uid
     };
 
-    const colecaoAtual = JSON.parse(localStorage.getItem("colecao") || "[]");
-    colecaoAtual.push(novoPerfume);
-    localStorage.setItem("colecao", JSON.stringify(colecaoAtual));
+    try {
+      await addDoc(collection(db, "colecao"), novoPerfume);
 
-    const perfumeVindo = location.state?.perfume;
-    if (perfumeVindo) {
-      const wishlist = JSON.parse(localStorage.getItem("wishlist") || "[]");
-      const novaWishlist = wishlist.filter(
-        (p) => !(p.nome === perfumeVindo.nome && p.marca === perfumeVindo.marca)
-      );
-      localStorage.setItem("wishlist", JSON.stringify(novaWishlist));
+      const perfumeVindo = location.state?.perfume;
+      if (perfumeVindo) {
+        const wishlist = JSON.parse(localStorage.getItem("wishlist") || "[]");
+        const novaWishlist = wishlist.filter(
+          (p) => !(p.nome === perfumeVindo.nome && p.marca === perfumeVindo.marca)
+        );
+        localStorage.setItem("wishlist", JSON.stringify(novaWishlist));
+      }
+
+      navigate("/collection");
+    } catch (error) {
+      console.error("Erro ao adicionar ao Firestore:", error);
     }
-
-    localStorage.removeItem("perfumePrePreenchido");
-    navigate("/collection");
   };
 
   return (

@@ -1,39 +1,59 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Plus, Trash } from "lucide-react";
+import { db } from "../firebase";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  deleteDoc,
+  doc
+} from "firebase/firestore";
 
 function Wishlist() {
   const [wishlist, setWishlist] = useState([]);
   const navigate = useNavigate();
 
+  const usuario = JSON.parse(localStorage.getItem("usuarioLogado") || "{}");
+
   useEffect(() => {
-    const listaSalva = JSON.parse(localStorage.getItem("wishlist") || "[]");
-    setWishlist(listaSalva);
-  }, []);
+    const carregarWishlist = async () => {
+      if (!usuario?.uid) return;
+
+      const q = query(
+        collection(db, "wishlist"),
+        where("uid", "==", usuario.uid)
+      );
+      const snapshot = await getDocs(q);
+      const lista = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setWishlist(lista);
+    };
+
+    carregarWishlist();
+  }, [usuario]);
 
   const handleEditar = (perfume) => {
     navigate("/wishlist/add", { state: { perfume, editMode: true } });
   };
 
-  const handleExcluir = (nome, marca) => {
-    const confirmar = window.confirm("Tem certeza que deseja excluir este perfume da wishlist?");
+  const handleExcluir = async (id) => {
+    const confirmar = window.confirm("Tem certeza que deseja excluir este perfume?");
     if (!confirmar) return;
 
-    const novaLista = wishlist.filter(
-      (p) => !(p.nome === nome && p.marca === marca)
-    );
-    setWishlist(novaLista);
-    localStorage.setItem("wishlist", JSON.stringify(novaLista));
+    await deleteDoc(doc(db, "wishlist", id));
+    setWishlist((prev) => prev.filter((p) => p.id !== id));
   };
 
-  const handleAdicionar = (perfume) => {
+  const handleAdicionar = async (perfume) => {
     navigate("/collection/add", { state: { perfume } });
+    await deleteDoc(doc(db, "wishlist", perfume.id));
+    setWishlist((prev) => prev.filter((p) => p.id !== perfume.id));
   };
 
   return (
     <div className="min-h-screen p-6 bg-gradient-to-br from-rose-50 to-violet-50">
       <div className="max-w-4xl mx-auto">
-        {/* Botão de Voltar */}
         <button
           onClick={() => navigate("/home")}
           className="flex items-center text-pink-600 hover:text-pink-800 mb-4 transition font-medium"
@@ -42,7 +62,6 @@ function Wishlist() {
           Voltar
         </button>
 
-        {/* Cabeçalho */}
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
@@ -63,11 +82,10 @@ function Wishlist() {
           </button>
         </div>
 
-        {/* Lista de perfumes */}
         <div className="space-y-4">
-          {wishlist.map((perfume, index) => (
+          {wishlist.map((perfume) => (
             <div
-              key={index}
+              key={perfume.id}
               className="flex items-center justify-between bg-white rounded-xl shadow p-4 hover:shadow-md transition cursor-pointer"
               onClick={() => handleEditar(perfume)}
             >
@@ -105,7 +123,7 @@ function Wishlist() {
                   Adicionar à Coleção
                 </button>
                 <button
-                  onClick={() => handleExcluir(perfume.nome, perfume.marca)}
+                  onClick={() => handleExcluir(perfume.id)}
                   className="bg-red-100 text-red-600 px-3 py-2 rounded-lg hover:bg-red-200"
                   title="Excluir"
                 >
